@@ -8,7 +8,13 @@ const config = {
     },
 
     devServer: {
-        port: 9000
+        port: 9000,
+        proxy: {
+            "/api": {
+                target: "http://localhost:5000",
+                pathRewrite: { "^/api": "" }
+            }
+        }
     },
 
     module: {
