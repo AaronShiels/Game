@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "jsx": "react",
+        "noImplicitAny": true,
+        "outDir": "./dist/",
+        "sourceMap": true,
+        "strict": true,
+        "target": "es6",
+    }
+}

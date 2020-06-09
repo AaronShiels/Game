@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "server: build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "client: install",
+            "type": "npm",
+            "script": "install",
+            "path": "src/Game.Client/",
+            "problemMatcher": []
+        },
+        {
+            "label": "client: build",
+            "dependsOn": [
+                "client: install"
+            ],
+            "type": "npm",
+            "script": "build",
+            "path": "src/Game.Client/",
+            "problemMatcher": []
+        },
+        {
+            "label": "client: run",
+            "type": "npm",
+            "script": "run",
+            "path": "src/Game.Client/",
+            "problemMatcher": []
+        }
+    ]
+}
