@@ -1,9 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import Test from "./components/Test";
+import Main from "./components/Main";
 
-ReactDOM.render(
-    <Test />,
-    document.getElementById("example")
-);
+ReactDOM.render(<Main />, document.getElementById("main"));

@@ -4,15 +4,17 @@ const config = {
     devtool: "source-map",
 
     resolve: {
-        extensions: [".ts", ".tsx"]
+        extensions: [".ts", ".tsx", ".js", ".jsx"]
     },
 
     devServer: {
         port: 9000,
         proxy: {
             "/api": {
-                target: "http://localhost:5000",
-                pathRewrite: { "^/api": "" }
+                target: "https://localhost:5001",
+                pathRewrite: { "^/api": "" },
+                secure: false,
+                ws: true
             }
         }
     },

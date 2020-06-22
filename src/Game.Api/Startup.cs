@@ -27,8 +27,8 @@ namespace Game.Api
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
-            else
-                app.UseHttpsRedirection();
+
+            app.UseHttpsRedirection();
 
             app.UseRouting();
             app.UseEndpoints(endpoints =>
