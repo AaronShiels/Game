@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "server: build",
+            "label": "build: server",
             "command": "dotnet",
             "type": "process",
             "args": [
@@ -11,16 +11,16 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "client: install",
+            "label": "build: client: install",
             "type": "npm",
             "script": "install",
             "path": "src/Game.Client/",
             "problemMatcher": []
         },
         {
-            "label": "client: build",
+            "label": "build: client",
             "dependsOn": [
-                "client: install"
+                "build: client: install"
             ],
             "type": "npm",
             "script": "build",
@@ -28,11 +28,37 @@
             "problemMatcher": []
         },
         {
-            "label": "client: run",
+            "label": "run: client",
             "type": "npm",
             "script": "run",
             "path": "src/Game.Client/",
             "problemMatcher": []
-        }
+        },
+        {
+            "label": "docker: build: server",
+            "command": "docker",
+            "type": "shell",
+            "args": [
+                "build",
+                "-f",
+                "./src/Game.Api/Game.Api.Dockerfile",
+                "-t",
+                "aaronshiels/gameapi:server",
+                "."
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "docker: compose",
+            "command": "docker-compose",
+            "type": "shell",
+            "args": [
+                "-f",
+                "docker-compose.yml",
+                "up",
+                "-d"
+            ],
+            "problemMatcher": []
+        },
     ]
 }
