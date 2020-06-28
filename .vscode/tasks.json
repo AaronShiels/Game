@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build: server",
+            "label": "build: api",
             "command": "dotnet",
             "type": "process",
             "args": [
@@ -35,16 +35,52 @@
             "problemMatcher": []
         },
         {
-            "label": "docker: build: server",
+            "label": "docker: build: api",
             "command": "docker",
             "type": "shell",
             "args": [
                 "build",
-                "-f",
-                "./src/Game.Api/Game.Api.Dockerfile",
                 "-t",
-                "aaronshiels/gameapi:server",
+                "aaronshiels/game:api",
                 "."
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/src/Game.Api"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "docker: build: proxy",
+            "command": "docker",
+            "type": "shell",
+            "args": [
+                "build",
+                "-t",
+                "aaronshiels/game:proxy",
+                "."
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/src/Game.Client"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "docker: push: api",
+            "command": "docker",
+            "type": "shell",
+            "args": [
+                "push",
+                "aaronshiels/game:api"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "docker: push: proxy",
+            "command": "docker",
+            "type": "shell",
+            "args": [
+                "push",
+                "aaronshiels/game:proxy"
             ],
             "problemMatcher": []
         },
@@ -60,5 +96,11 @@
             ],
             "problemMatcher": []
         },
+        {
+            "label": "aws: deploy",
+            "command": "./tools/deploy.ps1",
+            "type": "shell",
+            "problemMatcher": []
+        }
     ]
 }
