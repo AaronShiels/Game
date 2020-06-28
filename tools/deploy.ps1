@@ -1,7 +1,7 @@
 Set-DefaultAWSRegion -Region us-west-2
 
 $stackName = "Game"
-$template = Get-Content -Path ./game-template.json -Raw
+$template = Get-Content -Path ./game-template.yml -Raw
 $new = $true
 
 try {
