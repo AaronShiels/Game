@@ -1,7 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Game infrastructure.
+
 Parameters: {}
+
 Resources:
+  # Common networking
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -12,27 +15,7 @@ Resources:
         - Key: Name
           Value: Game
 
-  PublicSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId:
-        Ref: VPC
-      CidrBlock: 10.0.0.0/24
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: Game
-
-  PrivateSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          Value: Game
-
+  # Public networking
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -46,35 +29,18 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
-  ElasticIPAddress:
-    Type: AWS::EC2::EIP
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
     Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: Game
-
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId:
-        Fn::GetAtt:
-          - ElasticIPAddress
-          - AllocationId
-      SubnetId: !Ref PublicSubnet
+      VpcId:
+        Ref: VPC
+      CidrBlock: 10.0.0.0/24
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
           Value: Game
 
   PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: Game
-
-  PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
@@ -89,18 +55,54 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  PrivateRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NatGateway
-
   PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet
       RouteTableId: !Ref PublicRouteTable
+
+  # Private networking
+  ElasticIPAddress:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: Game
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIPAddress.AllocationId
+      SubnetId: !Ref PublicSubnet
+      Tags:
+        - Key: Name
+          Value: Game
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Game
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Game
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
 
   PrivateSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -108,6 +110,7 @@ Resources:
       SubnetId: !Ref PrivateSubnet
       RouteTableId: !Ref PrivateRouteTable
 
+  # Common service infrastructure
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -152,12 +155,26 @@ Resources:
       LogGroupName: "/aws/ecs/game"
       RetentionInDays: 1
 
+  PrivateDnsNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: game.local
+      Vpc: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Game
+
+  # API service
   ApiTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Name: api-task-definition
           Image: aaronshiels/game:api
+          PortMappings:
+            - ContainerPort: 5000
+              HostPort: 5000
+              Protocol: tcp
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -194,3 +211,86 @@ Resources:
             - !Ref SecurityGroup
           Subnets:
             - !Ref PrivateSubnet
+      ServiceRegistries:
+        - RegistryArn: !GetAtt ApiServiceDiscovery.Arn
+
+  ApiServiceDiscovery:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      DnsConfig:
+        DnsRecords:
+          - TTL: 10
+            Type: A
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: api
+      NamespaceId: !Ref PrivateDnsNamespace
+      Tags:
+        - Key: Name
+          Value: Game
+
+  # Proxy service
+  ProxyTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: proxy-task-definition
+          Image: aaronshiels/game:proxy
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 80
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: us-west-2
+              awslogs-stream-prefix: proxy
+          Environment:
+            - Name: API_HOST
+              Value: api.game.local
+            - Name: API_PORT
+              Value: 5000
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn:
+        Ref: ECSTaskExecutionRole
+      Cpu: "1024"
+      Memory: "2048"
+      NetworkMode: awsvpc
+      Family: proxy-task-definition
+
+  ProxyService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref Cluster
+      DesiredCount: 1
+      LaunchType: FARGATE
+      ServiceName: proxy-service
+      TaskDefinition:
+        Ref: ProxyTaskDefinition
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets:
+            - !Ref PublicSubnet
+            - !Ref PrivateSubnet
+      ServiceRegistries:
+        - RegistryArn: !GetAtt ProxyServiceDiscovery.Arn
+
+  ProxyServiceDiscovery:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      DnsConfig:
+        DnsRecords:
+          - TTL: 10
+            Type: A
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: proxy
+      NamespaceId: !Ref PrivateDnsNamespace
+      Tags:
+        - Key: Name
+          Value: Game

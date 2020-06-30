@@ -1,47 +1,52 @@
-const config = {
-    mode: "production",
+const config = (env, { mode }) => {
+    mode = mode || "development";
+    console.log(`Mode: ${mode}.`);
 
-    devtool: "source-map",
+    return {
+        mode,
 
-    resolve: {
-        extensions: [".ts", ".tsx", ".js", ".jsx"]
-    },
+        devtool: "source-map",
 
-    devServer: {
-        port: 9000,
-        proxy: {
-            "/api": {
-                target: "https://localhost:5001",
-                pathRewrite: { "^/api": "" },
-                secure: false,
-                ws: true
+        resolve: {
+            extensions: [".ts", ".tsx", ".js", ".jsx"]
+        },
+
+        devServer: {
+            port: 9000,
+            proxy: {
+                "/api": {
+                    target: "https://localhost:5001",
+                    pathRewrite: { "^/api": "" },
+                    secure: false,
+                    ws: true
+                }
             }
+        },
+
+        module: {
+            rules: [
+                {
+                    test: /\.ts(x?)$/,
+                    exclude: /node_modules/,
+                    use: [
+                        {
+                            loader: "ts-loader"
+                        }
+                    ]
+                },
+                {
+                    enforce: "pre",
+                    test: /\.js$/,
+                    loader: "source-map-loader"
+                }
+            ]
+        },
+
+        externals: {
+            "react": "React",
+            "react-dom": "ReactDOM"
         }
-    },
-
-    module: {
-        rules: [
-            {
-                test: /\.ts(x?)$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: "ts-loader"
-                    }
-                ]
-            },
-            {
-                enforce: "pre",
-                test: /\.js$/,
-                loader: "source-map-loader"
-            }
-        ]
-    },
-
-    externals: {
-        "react": "React",
-        "react-dom": "ReactDOM"
-    }
+    };
 };
 
 module.exports = config;

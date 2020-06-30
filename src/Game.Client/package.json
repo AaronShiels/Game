@@ -2,7 +2,7 @@
   "name": "game",
   "version": "1.0.0",
   "scripts": {
-    "build": "webpack --watch",
+    "build": "webpack --mode=production --watch",
     "run": "webpack-dev-server --open"
   },
   "repository": {
