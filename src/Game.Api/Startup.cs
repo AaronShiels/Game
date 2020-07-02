@@ -30,8 +30,8 @@ namespace Game.Api
             app.UseRouting();
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHealthChecks("/healthcheck");
-                endpoints.MapHub<GameHub>("/game");
+                endpoints.MapHealthChecks("/health");
+                endpoints.MapHub<GameHub>("/api/game");
             });
         }
     }

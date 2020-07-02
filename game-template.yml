@@ -4,13 +4,38 @@ Description: Game infrastructure.
 Parameters: {}
 
 Resources:
-  # Common networking
+  # Common infrastructure
   VPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
       EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Game
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/aws/ecs/game"
+      RetentionInDays: 1
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: SecurityGroup
+      GroupDescription: Security for the container cluster.
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
       Tags:
         - Key: Name
           Value: Game
@@ -29,12 +54,27 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
-  PublicSubnet:
+  PublicSubnetOne:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: VPC
-      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Game
+
+  PublicSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.4.0/24
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -55,14 +95,20 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  PublicSubnetRouteTableAssociation:
+  PublicSubnetOneRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnet
+      SubnetId: !Ref PublicSubnetOne
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetTwo
       RouteTableId: !Ref PublicRouteTable
 
   # Private networking
-  ElasticIPAddress:
+  ElasticIPAddressOne:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
@@ -70,26 +116,59 @@ Resources:
         - Key: Name
           Value: Game
 
-  NatGateway:
-    Type: AWS::EC2::NatGateway
+  ElasticIPAddressTwo:
+    Type: AWS::EC2::EIP
     Properties:
-      AllocationId: !GetAtt ElasticIPAddress.AllocationId
-      SubnetId: !Ref PublicSubnet
+      Domain: vpc
       Tags:
         - Key: Name
           Value: Game
 
-  PrivateSubnet:
+  NatGatewayOne:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIPAddressOne.AllocationId
+      SubnetId: !Ref PublicSubnetOne
+      Tags:
+        - Key: Name
+          Value: Game
+
+  NatGatewayTwo:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIPAddressTwo.AllocationId
+      SubnetId: !Ref PublicSubnetTwo
+      Tags:
+        - Key: Name
+          Value: Game
+
+  PrivateSubnetOne:
     Type: AWS::EC2::Subnet
     Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref "AWS::Region"
       VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: 10.0.5.0/24
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: Game
 
-  PrivateRouteTable:
+  PrivateSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref "AWS::Region"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.6.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Game
+
+  PrivateRouteTableOne:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
@@ -97,39 +176,101 @@ Resources:
         - Key: Name
           Value: Game
 
-  PrivateRoute:
+  PrivateRouteOne:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId: !Ref PrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTableOne
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
+      NatGatewayId: !Ref NatGatewayOne
 
-  PrivateSubnetRouteTableAssociation:
+  PrivateSubnetOneRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PrivateSubnet
-      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnetOne
+      RouteTableId: !Ref PrivateRouteTableOne
 
-  # Common service infrastructure
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  PrivateRouteTableTwo:
+    Type: AWS::EC2::RouteTable
     Properties:
-      GroupName: SecurityGroup
-      GroupDescription: Security for the container cluster.
       VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
-          FromPort: "80"
-          ToPort: "80"
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
-          FromPort: "443"
-          ToPort: "443"
       Tags:
         - Key: Name
           Value: Game
 
+  PrivateRouteTwo:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableTwo
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayTwo
+
+  PrivateSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetTwo
+      RouteTableId: !Ref PrivateRouteTableTwo
+
+  # Website hosting
+  #HostedZone:
+  #  Type: AWS::Route53::HostedZone
+  #  Properties:
+  #    Name: goonsackgames.com.
+  #    HostedZoneConfig:
+  #      Comment: Manually configured hosted zone for GoonSackGames.
+  #    HostedZoneTags:
+  #      - Key: Name
+  #        Value: Game
+  #
+  #RootCnameRecordSet:
+  #  Type: AWS::Route53::RecordSet
+  #  Properties:
+  #    HostedZoneId: !Ref HostedZone
+  #    Name: goonsackgames.com.
+  #    Type: CNAME
+  #    TTL: 300
+  #    ResourceRecords:
+  #      - app.goonsackgames.com.
+  #
+  #WwwCnameRecordSet:
+  #  Type: AWS::Route53::RecordSet
+  #  Properties:
+  #    HostedZoneId: !Ref HostedZone
+  #    Name: www.goonsackgames.com.
+  #    Type: CNAME
+  #    TTL: 300
+  #    ResourceRecords:
+  #      - app.goonsackgames.com.
+
+  # Load balancing
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Subnets:
+        - !Ref PublicSubnetOne
+        - !Ref PublicSubnetTwo
+      SecurityGroups:
+        - !Ref SecurityGroup
+      Tags:
+        - Key: Name
+          Value: Game
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - LoadBalancer
+    Properties:
+      DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: 200
+            ContentType: "text/plain"
+            MessageBody: "Hello world"
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  # Service infrastructure
   Cluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -149,12 +290,6 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 
-  LogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: "/aws/ecs/game"
-      RetentionInDays: 1
-
   PrivateDnsNamespace:
     Type: AWS::ServiceDiscovery::PrivateDnsNamespace
     Properties:
@@ -169,11 +304,11 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-        - Name: api-task-definition
+        - Name: api
           Image: aaronshiels/game:api
           PortMappings:
-            - ContainerPort: 5000
-              HostPort: 5000
+            - ContainerPort: 80
+              HostPort: 80
               Protocol: tcp
           LogConfiguration:
             LogDriver: awslogs
@@ -185,13 +320,13 @@ Resources:
             - Name: ASPNETCORE_ENVIRONMENT
               Value: Production
             - Name: ASPNETCORE_URLS
-              Value: http://+:5000
+              Value: http://+:80
       RequiresCompatibilities:
         - FARGATE
       ExecutionRoleArn:
         Ref: ECSTaskExecutionRole
-      Cpu: "1024"
-      Memory: "2048"
+      Cpu: 1024
+      Memory: 2048
       NetworkMode: awsvpc
       Family: api-task-definition
 
@@ -201,7 +336,6 @@ Resources:
       Cluster: !Ref Cluster
       DesiredCount: 1
       LaunchType: FARGATE
-      ServiceName: api-service
       TaskDefinition:
         Ref: ApiTaskDefinition
       NetworkConfiguration:
@@ -210,16 +344,21 @@ Resources:
           SecurityGroups:
             - !Ref SecurityGroup
           Subnets:
-            - !Ref PrivateSubnet
+            - !Ref PrivateSubnetOne
+            - !Ref PrivateSubnetTwo
       ServiceRegistries:
         - RegistryArn: !GetAtt ApiServiceDiscovery.Arn
+      LoadBalancers:
+        - ContainerName: api
+          ContainerPort: 80
+          TargetGroupArn: !Ref ApiTargetGroup
 
   ApiServiceDiscovery:
     Type: AWS::ServiceDiscovery::Service
     Properties:
       DnsConfig:
         DnsRecords:
-          - TTL: 10
+          - TTL: 300
             Type: A
       HealthCheckCustomConfig:
         FailureThreshold: 1
@@ -229,12 +368,37 @@ Resources:
         - Key: Name
           Value: Game
 
-  # Proxy service
-  ProxyTaskDefinition:
+  ApiTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /health
+      TargetType: ip
+      Protocol: HTTP
+      Port: 80
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Game
+
+  ApiListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ApiTargetGroup
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - /api/* # change to conn
+      ListenerArn: !Ref Listener
+      Priority: 1
+
+  # Client service
+  ClientTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-        - Name: proxy-task-definition
+        - Name: client
           Image: aaronshiels/game:proxy
           PortMappings:
             - ContainerPort: 80
@@ -245,52 +409,79 @@ Resources:
             Options:
               awslogs-group: !Ref LogGroup
               awslogs-region: us-west-2
-              awslogs-stream-prefix: proxy
+              awslogs-stream-prefix: client
           Environment:
             - Name: API_HOST
               Value: api.game.local
             - Name: API_PORT
-              Value: 5000
+              Value: 80
       RequiresCompatibilities:
         - FARGATE
       ExecutionRoleArn:
         Ref: ECSTaskExecutionRole
-      Cpu: "1024"
-      Memory: "2048"
+      Cpu: 1024
+      Memory: 2048
       NetworkMode: awsvpc
-      Family: proxy-task-definition
+      Family: client-task-definition
 
-  ProxyService:
+  ClientService:
     Type: AWS::ECS::Service
     Properties:
       Cluster: !Ref Cluster
       DesiredCount: 1
       LaunchType: FARGATE
-      ServiceName: proxy-service
-      TaskDefinition:
-        Ref: ProxyTaskDefinition
+      TaskDefinition: !Ref ClientTaskDefinition
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
             - !Ref SecurityGroup
           Subnets:
-            - !Ref PublicSubnet
-            - !Ref PrivateSubnet
+            - !Ref PrivateSubnetOne
+            - !Ref PrivateSubnetTwo
       ServiceRegistries:
-        - RegistryArn: !GetAtt ProxyServiceDiscovery.Arn
+        - RegistryArn: !GetAtt ClientServiceDiscovery.Arn
+      LoadBalancers:
+        - ContainerName: client
+          ContainerPort: 80
+          TargetGroupArn: !Ref ClientTargetGroup
 
-  ProxyServiceDiscovery:
+  ClientServiceDiscovery:
     Type: AWS::ServiceDiscovery::Service
     Properties:
       DnsConfig:
         DnsRecords:
-          - TTL: 10
+          - TTL: 300
             Type: A
       HealthCheckCustomConfig:
         FailureThreshold: 1
-      Name: proxy
+      Name: client
       NamespaceId: !Ref PrivateDnsNamespace
       Tags:
         - Key: Name
           Value: Game
+
+  ClientTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /
+      TargetType: ip
+      Protocol: HTTP
+      Port: 80
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Game
+
+  ClientListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ClientTargetGroup
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - /*
+      ListenerArn: !Ref Listener
+      Priority: 2
