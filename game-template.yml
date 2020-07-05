@@ -211,35 +211,35 @@ Resources:
       RouteTableId: !Ref PrivateRouteTableTwo
 
   # Website hosting
-  #HostedZone:
-  #  Type: AWS::Route53::HostedZone
-  #  Properties:
-  #    Name: goonsackgames.com.
-  #    HostedZoneConfig:
-  #      Comment: Manually configured hosted zone for GoonSackGames.
-  #    HostedZoneTags:
-  #      - Key: Name
-  #        Value: Game
-  #
-  #RootCnameRecordSet:
-  #  Type: AWS::Route53::RecordSet
-  #  Properties:
-  #    HostedZoneId: !Ref HostedZone
-  #    Name: goonsackgames.com.
-  #    Type: CNAME
-  #    TTL: 300
-  #    ResourceRecords:
-  #      - app.goonsackgames.com.
-  #
-  #WwwCnameRecordSet:
-  #  Type: AWS::Route53::RecordSet
-  #  Properties:
-  #    HostedZoneId: !Ref HostedZone
-  #    Name: www.goonsackgames.com.
-  #    Type: CNAME
-  #    TTL: 300
-  #    ResourceRecords:
-  #      - app.goonsackgames.com.
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: goonsackgames.com.
+      HostedZoneConfig:
+        Comment: Hosted zone for GoonSackGames.
+      HostedZoneTags:
+        - Key: Name
+          Value: Game
+
+  RootCnameRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZone
+      Name: goonsackgames.com.
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+
+  WwwCnameRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZone
+      Name: www.goonsackgames.com.
+      Type: CNAME
+      TTL: 300
+      ResourceRecords:
+        - goonsackgames.com.
 
   # Load balancing
   LoadBalancer:
