@@ -31,7 +31,7 @@ namespace Game.Api
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapHealthChecks("/health");
-                endpoints.MapHub<GameHub>("/api/game");
+                endpoints.MapHub<GameHub>("/api/conn");
             });
         }
     }

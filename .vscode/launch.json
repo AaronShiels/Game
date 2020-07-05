@@ -8,13 +8,14 @@
             "name": ".NET Core Launch (web)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "api: build",
+            "preLaunchTask": "build: api",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/src/Game.Api/bin/Debug/netcoreapp3.1/Game.Api.dll",
             "args": [],
             "cwd": "${workspaceFolder}/src/Game.Api",
             "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://+:5000;https://+:5001"
             }
         }
     ]

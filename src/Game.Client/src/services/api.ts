@@ -6,7 +6,7 @@ interface API {
 }
 
 const hubConnection = new HubConnectionBuilder()
-    .withUrl("/api/game")
+    .withUrl("/api/conn")
     .configureLogging(LogLevel.Information)
     .build();
 

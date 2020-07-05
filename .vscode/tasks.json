@@ -50,13 +50,13 @@
             "problemMatcher": []
         },
         {
-            "label": "docker: build: proxy",
+            "label": "docker: build: client",
             "command": "docker",
             "type": "shell",
             "args": [
                 "build",
                 "-t",
-                "aaronshiels/game:proxy",
+                "aaronshiels/game:client",
                 "."
             ],
             "options": {
@@ -75,12 +75,12 @@
             "problemMatcher": []
         },
         {
-            "label": "docker: push: proxy",
+            "label": "docker: push: client",
             "command": "docker",
             "type": "shell",
             "args": [
                 "push",
-                "aaronshiels/game:proxy"
+                "aaronshiels/game:client"
             ],
             "problemMatcher": []
         },

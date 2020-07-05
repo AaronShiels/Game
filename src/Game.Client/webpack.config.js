@@ -1,3 +1,5 @@
+const CopyPlugin = require('copy-webpack-plugin');
+
 const config = (env, { mode }) => {
     mode = mode || "development";
     console.log(`Mode: ${mode}.`);
@@ -15,8 +17,7 @@ const config = (env, { mode }) => {
             port: 9000,
             proxy: {
                 "/api": {
-                    target: "https://localhost:5001",
-                    pathRewrite: { "^/api": "" },
+                    target: "http://localhost:5000",
                     secure: false,
                     ws: true
                 }
@@ -41,6 +42,14 @@ const config = (env, { mode }) => {
                 }
             ]
         },
+
+        plugins: [
+            new CopyPlugin({
+                patterns: [
+                    { from: "src/index.html", to: "index.html" }
+                ]
+            })
+        ],
 
         externals: {
             "react": "React",

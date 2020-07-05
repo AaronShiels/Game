@@ -241,6 +241,17 @@ Resources:
       ResourceRecords:
         - goonsackgames.com.
 
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: goonsackgames.com
+      SubjectAlternativeNames:
+        - "*.goonsackgames.com"
+      ValidationMethod: DNS
+      Tags:
+        - Key: Name
+          Value: Game
+
   # Load balancing
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -255,7 +266,22 @@ Resources:
         - Key: Name
           Value: Game
 
-  Listener:
+  HTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - LoadBalancer
+    Properties:
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            StatusCode: HTTP_301
+            Protocol: HTTPS
+            Port: 443
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  HTTPSListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     DependsOn:
       - LoadBalancer
@@ -267,8 +293,10 @@ Resources:
             ContentType: "text/plain"
             MessageBody: "Hello world"
       LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: HTTP
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref Certificate
 
   # Service infrastructure
   Cluster:
@@ -390,7 +418,7 @@ Resources:
         - Field: path-pattern
           Values:
             - /api/* # change to conn
-      ListenerArn: !Ref Listener
+      ListenerArn: !Ref HTTPSListener
       Priority: 1
 
   # Client service
@@ -399,7 +427,7 @@ Resources:
     Properties:
       ContainerDefinitions:
         - Name: client
-          Image: aaronshiels/game:proxy
+          Image: aaronshiels/game:client
           PortMappings:
             - ContainerPort: 80
               HostPort: 80
@@ -410,11 +438,6 @@ Resources:
               awslogs-group: !Ref LogGroup
               awslogs-region: us-west-2
               awslogs-stream-prefix: client
-          Environment:
-            - Name: API_HOST
-              Value: api.game.local
-            - Name: API_PORT
-              Value: 80
       RequiresCompatibilities:
         - FARGATE
       ExecutionRoleArn:
@@ -483,5 +506,5 @@ Resources:
         - Field: path-pattern
           Values:
             - /*
-      ListenerArn: !Ref Listener
+      ListenerArn: !Ref HTTPSListener
       Priority: 2

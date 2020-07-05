@@ -1,6 +1,6 @@
 server {
     location / {
-        root /data/www;
+        proxy_pass http://${CLIENT_HOST}:${CLIENT_PORT};
     }
 
     location /api/ {
