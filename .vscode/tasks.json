@@ -18,19 +18,9 @@
             "problemMatcher": []
         },
         {
-            "label": "build: client",
-            "dependsOn": [
-                "build: client: install"
-            ],
-            "type": "npm",
-            "script": "build",
-            "path": "src/Game.Client/",
-            "problemMatcher": []
-        },
-        {
             "label": "run: client",
             "type": "npm",
-            "script": "run",
+            "script": "debug",
             "path": "src/Game.Client/",
             "problemMatcher": []
         },

@@ -1,4 +1,4 @@
-import { HubConnectionBuilder, LogLevel } from "@microsoft/signalR";
+import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 
 interface API {
     connect(onPing: (from: string) => void): Promise<boolean>;
