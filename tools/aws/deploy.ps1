@@ -16,10 +16,10 @@ catch {
 if ($new) {    
     Write-Host "Creating stack $stackName..."
     New-CFNStack -StackName Game -TemplateBody $template -Capability CAPABILITY_NAMED_IAM
-    Write-Host "Stack created!"
+    Write-Host "Stack create initiated."
 }
 else {
     Write-Host "Updating stack $stackName..."
     Update-CFNStack -StackName Game -TemplateBody $template -Capability CAPABILITY_NAMED_IAM
-    Write-Host "Stack updated!"
+    Write-Host "Stack update initated."
 }

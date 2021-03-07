@@ -84,12 +84,18 @@
                 "up",
                 "-d"
             ],
+            "options": {
+                "cwd": "${workspaceFolder}/tools/debugging"
+            },
             "problemMatcher": []
         },
         {
             "label": "aws: deploy",
-            "command": "./tools/deploy.ps1",
+            "command": "./deploy.ps1",
             "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/tools/aws"
+            },
             "problemMatcher": []
         }
     ]

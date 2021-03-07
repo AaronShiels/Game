@@ -34,23 +34,20 @@ const config = (_, { mode }) => {
             }
         ]
     };
+    const cssLoaderRule = {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
+    };
     const sourceMapLoaderRule = {
         enforce: "pre",
         test: /\.js$/,
         loader: "source-map-loader"
     };
-    const rules = isProduction ? [tsLoaderRule] : [tsLoaderRule, sourceMapLoaderRule];
-    const copyPlugin = isProduction
-        ? new CopyPlugin({
-            patterns: [
-                { from: "src/index.production.html", to: "index.html" }
-            ]
-        })
-        : new CopyPlugin({
-            patterns: [
-                { from: "src/index.development.html", to: "index.html" }
-            ]
-        });
+    const rules = isProduction ? [tsLoaderRule, cssLoaderRule] : [tsLoaderRule, cssLoaderRule, sourceMapLoaderRule];
+    const copyPluginPatterns = isProduction
+        ? [{ from: "src/index.production.html", to: "index.html" }]
+        : [{ from: "src/index.development.html", to: "index.html" }];
+    const copyPluginConfig = new CopyPlugin({ patterns: copyPluginPatterns });
     const externals = {
         "react": "React",
         "react-dom": "ReactDOM"
@@ -62,7 +59,7 @@ const config = (_, { mode }) => {
         resolve,
         devServer,
         module: { rules },
-        plugins: [copyPlugin],
+        plugins: [copyPluginConfig],
         externals
     };
 };

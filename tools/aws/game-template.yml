@@ -301,8 +301,6 @@ Resources:
   # Service infrastructure
   Cluster:
     Type: AWS::ECS::Cluster
-    Properties:
-      ClusterName: game-cluster
 
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -356,10 +354,11 @@ Resources:
       Cpu: 1024
       Memory: 2048
       NetworkMode: awsvpc
-      Family: api-task-definition
 
   ApiService:
     Type: AWS::ECS::Service
+    DependsOn:
+      - ApiListenerRule
     Properties:
       Cluster: !Ref Cluster
       DesiredCount: 1
@@ -404,9 +403,6 @@ Resources:
       Protocol: HTTP
       Port: 80
       VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: Game
 
   ApiListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -440,15 +436,15 @@ Resources:
               awslogs-stream-prefix: client
       RequiresCompatibilities:
         - FARGATE
-      ExecutionRoleArn:
-        Ref: ECSTaskExecutionRole
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
       Cpu: 1024
       Memory: 2048
       NetworkMode: awsvpc
-      Family: client-task-definition
 
   ClientService:
     Type: AWS::ECS::Service
+    DependsOn:
+      - ClientListenerRule
     Properties:
       Cluster: !Ref Cluster
       DesiredCount: 1
@@ -492,9 +488,6 @@ Resources:
       Protocol: HTTP
       Port: 80
       VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: Game
 
   ClientListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
